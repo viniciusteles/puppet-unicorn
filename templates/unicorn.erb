@@ -1,0 +1,62 @@
+#! /bin/bash
+
+### BEGIN INIT INFO
+# Provides:          unicorn
+# Required-Start:    $local_fs $remote_fs $network $syslog
+# Required-Stop:     $local_fs $remote_fs $network $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: starts the unicorn web server
+# Description:       starts unicorn
+### END INIT INFO
+
+USER="<%= user %>"
+APP="<%= name %>"
+USER_PATH="/home/$USER"
+PROJECT_PATH="<%= project_path %>"
+APP_PATH="$USER_PATH/$PROJECT_PATH"
+RBENV_PATH="$USER_PATH/.rbenv"
+DAEMON_NAME="<%= daemon_name %>"
+DAEMON="$APP_PATH/bin/$DAEMON_NAME"
+DAEMON_OPTS=""
+NAME="unicorn $APP"
+DESC="Unicorn for app $APP"
+PID="$APP_PATH/tmp/pids/unicorn.pid"
+
+set -e
+
+case "$1" in
+  start)
+        CD_TO_APP_DIR="cd $APP_PATH"
+        START_DAEMON_PROCESS="$DAEMON $DAEMON_OPTS"
+
+        echo -n "Starting $DESC: "
+        if [ `whoami` = root ]; then
+          su - $USER -c "$CD_TO_APP_DIR > /dev/null 2>&1 && $START_DAEMON_PROCESS"
+        else
+          $CD_TO_APP_DIR > /dev/null 2>&1 && $START_DAEMON_PROCESS
+        fi
+        echo "$NAME."
+        ;;
+  stop)
+        echo -n "Stopping $DESC: "
+        kill -QUIT `cat $PID`
+        echo "$NAME."
+        ;;
+  restart)
+        echo -n "Restarting $DESC: "
+        kill -USR2 `cat $PID`
+        echo "$NAME."
+        ;;
+  reload)
+        echo -n "Reloading $DESC configuration: "
+        kill -HUP `cat $PID`
+        echo "$NAME."
+        ;;
+  *)
+        echo "Usage: $NAME {start|stop|restart|reload}" >&2
+        exit 1
+        ;;
+esac
+
+exit 0
