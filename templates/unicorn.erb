@@ -10,8 +10,10 @@
 # Description:       starts unicorn
 ### END INIT INFO
 
+set -e
+
 USER="<%= user %>"
-APP="<%= name %>"
+APP="<%= app %>"
 USER_PATH="/home/$USER"
 PROJECT_PATH="<%= project_path %>"
 APP_PATH="$USER_PATH/$PROJECT_PATH"
@@ -21,40 +23,76 @@ DAEMON="$APP_PATH/bin/$DAEMON_NAME"
 DAEMON_OPTS=""
 NAME="unicorn $APP"
 DESC="Unicorn for app $APP"
+RESTART_SLEEP=2
 PID="$APP_PATH/tmp/pids/unicorn.pid"
+old_pid="$PID.oldbin"
+CD_TO_APP_DIR="cd $APP_PATH"
+START_DAEMON_PROCESS="$DAEMON $DAEMON_OPTS"
+TIMEOUT=${TIMEOUT-60}
 
-set -e
+sig() {
+  test -s "$PID" && kill -$1 `cat $PID`
+}
+
+oldsig() {
+  test -s $old_pid && kill -$1 `cat $old_pid`
+}
+
+start_cmd() {
+  if [ `whoami` = root ]; then
+    su - $USER -c "$CD_TO_APP_DIR > /dev/null 2>&1 && $START_DAEMON_PROCESS"
+  else
+    $CD_TO_APP_DIR > /dev/null 2>&1 && $START_DAEMON_PROCESS
+  fi
+  echo "$NAME."
+}
 
 case "$1" in
   start)
-        CD_TO_APP_DIR="cd $APP_PATH"
-        START_DAEMON_PROCESS="$DAEMON $DAEMON_OPTS"
-
-        echo -n "Starting $DESC: "
-        if [ `whoami` = root ]; then
-          su - $USER -c "$CD_TO_APP_DIR > /dev/null 2>&1 && $START_DAEMON_PROCESS"
-        else
-          $CD_TO_APP_DIR > /dev/null 2>&1 && $START_DAEMON_PROCESS
-        fi
-        echo "$NAME."
+        sig 0 && echo >&2 "Already running" && exit 0
+        echo -n "Starting $DESC: " && start_cmd
         ;;
   stop)
-        echo -n "Stopping $DESC: "
-        kill -QUIT `cat $PID`
-        echo "$NAME."
+        sig QUIT && echo "Stopping $DESC." && exit 0
+        echo >&2 "Not running" && exit 0
         ;;
-  restart)
-        echo -n "Restarting $DESC: "
-        kill -USR2 `cat $PID`
-        echo "$NAME."
+  force-stop)
+        sig TERM && echo "Forcing stop of $DESC" &&  exit 0
+        echo >&2 "Not running" && exit 0
         ;;
-  reload)
-        echo -n "Reloading $DESC configuration: "
-        kill -HUP `cat $PID`
-        echo "$NAME."
+  restart|reload)
+        sig HUP && echo "Reloaded $DESC" && exit 0
+        echo >&2 "Couldn't restart, starting instead" && echo -n "Starting $DESC: " && start_cmd
+        ;;
+  upgrade)
+        if sig USR2 && sleep $RESTART_SLEEP && sig 0 && oldsig QUIT
+        then
+          n=$TIMEOUT
+          while test -s $old_pid && test $n -ge 0
+          do
+            printf '.' && sleep 1 && n=$(( $n - 1 ))
+          done
+          echo
+
+          if test $n -lt 0 && test -s $old_pid
+          then
+            echo >&2 "$old_pid still exists after $TIMEOUT seconds"
+            exit 1
+          fi
+          exit 0
+        fi
+        echo >&2 "Couldn't upgrade, starting instead" && echo -n "Starting $DESC: " && start_cmd
+        ;;
+  status)
+        sig 0 && echo >&2 "Already running"&& exit 0
+        echo >&2 "Not running" && exit 1
+        ;;
+  reopen-logs)
+        sig USR1 && echo "Rotated ok" && exit 0
+        echo >&2 "Couldn't rotate logs" && exit 1
         ;;
   *)
-        echo "Usage: $NAME {start|stop|restart|reload}" >&2
+        echo "Usage: $NAME {start|stop|force-stop|restart|reload|upgrade|status|reopen-logs}" >&2
         exit 1
         ;;
 esac

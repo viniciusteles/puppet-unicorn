@@ -11,7 +11,5 @@ define unicorn($user, $project_path, $daemon_name='unicorn') {
   service { "unicorn_${name}":
     ensure     => running,
     enable     => true,
-    hasstatus  => false,
-    hasrestart => true,
   }
 }
