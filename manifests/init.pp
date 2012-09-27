@@ -1,10 +1,4 @@
 define unicorn($user, $project_path, $daemon_name='unicorn') {
-  anchor { "unicorn::begin::${name}": 
-    before => File["/etc/init.d/unicorn_${name}"],
-    notify => Service["unicorn_${name}"],
-  }
-
-
   file { "/etc/init.d/unicorn_${name}":
     ensure  => present,
     owner   => root,
@@ -18,8 +12,4 @@ define unicorn($user, $project_path, $daemon_name='unicorn') {
     ensure     => running,
     enable     => true,
   }
-
-  anchor { "unicorn::end::${name}": 
-    require => Service["unicorn_${name}"],
-  }  
 }
