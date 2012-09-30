@@ -1,4 +1,4 @@
-define unicorn($user, $home_dir, $project_name, $project_path, $environment='development') {
+define unicorn($user, $home_dir, $project_name, $projects_dir, $environment='development') {
   
   file { "/etc/init.d/unicorn_${project_name}":
     ensure  => present,
