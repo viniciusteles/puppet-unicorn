@@ -1,14 +1,15 @@
-define unicorn($user, $project_path, $daemon_name='unicorn') {
-  file { "/etc/init.d/unicorn_${name}":
+define unicorn($user, $home_dir, $project_name, $project_path, $environment='development') {
+  
+  file { "/etc/init.d/unicorn_${project_name}":
     ensure  => present,
     owner   => root,
     group   => root,
     mode    => '0755',
     content => template('unicorn/unicorn.erb'),
-    notify  => Service["unicorn_${name}"],
+    notify  => Service["unicorn_${project_name}"],
   }
 
-  service { "unicorn_${name}":
+  service { "unicorn_${project_name}":
     ensure     => running,
     enable     => true,
   }

@@ -13,12 +13,12 @@
 set -e
 
 USER="<%= user %>"
-APP="<%= name %>"
-USER_PATH="/home/$USER"
+APP="<%= project_name %>"
+USER_PATH="<%= home_dir %>"
 PROJECT_PATH="<%= project_path %>"
-APP_PATH="$USER_PATH/$PROJECT_PATH"
+APP_PATH="$PROJECT_PATH/$APP"
 RBENV_PATH="$USER_PATH/.rbenv"
-DAEMON_NAME="<%= daemon_name %>"
+DAEMON_NAME="unicorn_<%= environment %>"
 DAEMON="$APP_PATH/bin/$DAEMON_NAME"
 DAEMON_OPTS=""
 NAME="unicorn $APP"
