@@ -1,4 +1,11 @@
 define unicorn($user_name, $home_dir, $project_name, $projects_dir, $environment='development') {
+  if $environment =~ /production/ {
+    $release = '/current'
+    $ensure  = 'stopped'
+  } else {
+    $release = ''
+    $ensure  = 'running'
+  }
   
   file { "/etc/init.d/unicorn_${project_name}_${environment}":
     ensure  => present,
@@ -10,7 +17,7 @@ define unicorn($user_name, $home_dir, $project_name, $projects_dir, $environment
   }
 
   service { "unicorn_${project_name}_${environment}":
-    ensure     => running,
+    ensure     => $ensure,
     enable     => true,
   }
 }
