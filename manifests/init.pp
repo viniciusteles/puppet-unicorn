@@ -1,5 +1,5 @@
 define unicorn($user_name, $home_dir, $project_name, $projects_dir, $environment='development') {
-  if $environment =~ /production/ {
+  if $environment =~ /production|homologacao/ {
     $release = '/current'
     $ensure  = 'running'
   } else {
